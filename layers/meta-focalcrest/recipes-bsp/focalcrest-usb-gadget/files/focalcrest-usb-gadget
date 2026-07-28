@@ -1,0 +1,87 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Focalcrest
+
+set -e
+
+GADGET=/sys/kernel/config/usb_gadget/focalcrest
+FUNC=ecm.usb0
+
+find_udc() {
+	for u in /sys/class/udc/*; do
+		if [ -e "$u" ]; then
+			basename "$u"
+			return 0
+		fi
+	done
+	return 1
+}
+
+derive_mac() {
+	id=$(tr -dc 'a-f0-9' < /etc/machine-id 2>/dev/null || true)
+	while [ ${#id} -lt 32 ]; do
+		id="${id}0"
+	done
+	case "$1" in
+		dev)  o=$(echo "$id" | cut -c1-10)  ;;
+		host) o=$(echo "$id" | cut -c11-20) ;;
+	esac
+	printf '02:%s:%s:%s:%s:%s\n' \
+		"$(echo "$o" | cut -c1-2)" "$(echo "$o" | cut -c3-4)" \
+		"$(echo "$o" | cut -c5-6)" "$(echo "$o" | cut -c7-8)" \
+		"$(echo "$o" | cut -c9-10)"
+}
+
+start() {
+	[ -d "$GADGET" ] && exit 0
+
+	if ! udc=$(find_udc); then
+		echo "focalcrest-usb-gadget: 没有可用的 UDC, OTG 口可能处于 host 模式" >&2
+		exit 1
+	fi
+
+	mkdir -p "$GADGET"
+	echo 0x1d6b > "$GADGET/idVendor"
+	echo 0x0104 > "$GADGET/idProduct"
+	echo 0x0100 > "$GADGET/bcdDevice"
+	echo 0x0200 > "$GADGET/bcdUSB"
+
+	mkdir -p "$GADGET/strings/0x409"
+	echo "Focalcrest" > "$GADGET/strings/0x409/manufacturer"
+	echo "${PRETTY_PRODUCT:-$(cat /etc/hostname 2>/dev/null || echo focalcrest)}" \
+		> "$GADGET/strings/0x409/product"
+	echo "$(tr -dc 'a-f0-9' < /etc/machine-id 2>/dev/null || echo 0)" \
+		> "$GADGET/strings/0x409/serialnumber"
+
+	mkdir -p "$GADGET/functions/$FUNC"
+	derive_mac dev  > "$GADGET/functions/$FUNC/dev_addr"
+	derive_mac host > "$GADGET/functions/$FUNC/host_addr"
+
+	mkdir -p "$GADGET/configs/c.1/strings/0x409"
+	echo "CDC ECM" > "$GADGET/configs/c.1/strings/0x409/configuration"
+	echo 250       > "$GADGET/configs/c.1/MaxPower"
+	ln -sf "$GADGET/functions/$FUNC" "$GADGET/configs/c.1/"
+
+	echo "$udc" > "$GADGET/UDC"
+}
+
+stop() {
+	[ -d "$GADGET" ] || exit 0
+
+	echo "" > "$GADGET/UDC" 2>/dev/null || true
+	rm -f "$GADGET/configs/c.1/$FUNC"
+	rmdir "$GADGET/configs/c.1/strings/0x409" 2>/dev/null || true
+	rmdir "$GADGET/configs/c.1"               2>/dev/null || true
+	rmdir "$GADGET/functions/$FUNC"           2>/dev/null || true
+	rmdir "$GADGET/strings/0x409"             2>/dev/null || true
+	rmdir "$GADGET"                           2>/dev/null || true
+}
+
+case "$1" in
+	start) start ;;
+	stop)  stop  ;;
+	*)
+		echo "用法: $0 {start|stop}" >&2
+		exit 1
+		;;
+esac

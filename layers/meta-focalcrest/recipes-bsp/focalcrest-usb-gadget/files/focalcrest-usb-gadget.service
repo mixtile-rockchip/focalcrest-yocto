@@ -1,0 +1,15 @@
+[Unit]
+Description=Focalcrest CDC-ECM USB gadget (调试链路)
+Requires=sys-kernel-config.mount
+After=sys-kernel-config.mount
+Before=network-pre.target
+Wants=network-pre.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/sbin/focalcrest-usb-gadget start
+ExecStop=/usr/sbin/focalcrest-usb-gadget stop
+
+[Install]
+WantedBy=multi-user.target

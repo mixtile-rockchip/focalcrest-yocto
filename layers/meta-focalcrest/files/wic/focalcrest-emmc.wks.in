@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Focalcrest
+
+part loader1 --ondisk mmcblk0 --offset 64s --fixed-size 8128K --fstype=none --part-name loader1 --source rawcopy --sourceparams="file=${SPL_BINARY}"
+part loader2 --ondisk mmcblk0 --offset 16384s --fixed-size 8M --fstype=none --part-name loader2 --source rawcopy --sourceparams="file=u-boot.${UBOOT_SUFFIX}"
+part /boot --ondisk mmcblk0 --fstype=ext4 --label boot --part-name boot --fixed-size ${FC_BOOT_SIZE} --active --source bootimg-partition --use-label --fsoptions "defaults,nofail"
+part / --ondisk mmcblk0 --fstype=ext4 --label rootfs --part-name rootfs --part-type ${ROOT_DPS} --source rootfs --extra-space ${FC_ROOTFS_EXTRA_SPACE}
+
+bootloader --ptable gpt

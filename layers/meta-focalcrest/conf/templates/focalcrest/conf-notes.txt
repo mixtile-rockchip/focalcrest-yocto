@@ -1,0 +1,31 @@
+Focalcrest Rockchip BSP (Yocto 6.0 wrynose)
+
+This layer produces a single bring-up image, used to validate mainline kernel /
+U-Boot on the board.
+
+Common targets:
+  bitbake focalcrest-image-bringup    # bring-up image, produces a flashable .wic
+  bitbake virtual/bootloader          # u-boot + idbloader only
+  bitbake virtual/kernel              # kernel + DTB only (note: does NOT refresh fitImage)
+  bitbake linux-yocto-fitimage        # build this after DTS changes to refresh kernel.fit
+
+Artifacts: tmp/deploy/images/${MACHINE}/
+  *.rootfs.wic       full-disk image -> rkdeveloptool wl 0 <file>
+  idbloader.img      LBA 64
+  u-boot.itb         LBA 16384
+  fitImage           kernel FIT (DTB included) -> /boot/kernel.fit on the board
+
+Supported MACHINEs:
+  rk3566-focalcrest-az07
+  rk3566-autonomic-m1
+  rk3576s-focalcrest-az08
+  rk3588s-focalcrest-az04b
+
+Switching MACHINE (one build directory per board, sharing downloads/sstate):
+  . ./setup-env.sh build-m1
+  echo 'MACHINE = "rk3566-autonomic-m1"' >> conf/auto.conf
+
+Adding a board: conf/machine/<soc>-<vendor>-<board>.conf
+                holds only KERNEL_DEVICETREE / UBOOT_MACHINE / on-board peripherals;
+                anything shared across one SoC goes in include/focalcrest-<soc>.inc
+Adding a SoC:   conf/machine/include/focalcrest-<soc>.inc
