@@ -1,0 +1,153 @@
+name: Build
+
+run-name: Build ${{ inputs.machine }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      machine:
+        description: Yocto MACHINE to build
+        required: true
+        default: rk3566-focalcrest-az07
+        type: choice
+        options:
+          - rk3566-focalcrest-az07
+          - rk3566-autonomic-m1
+          - rk3576s-focalcrest-az08
+          - rk3588s-focalcrest-az04b
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-${{ inputs.machine }}
+  cancel-in-progress: false
+
+env:
+  MACHINE: ${{ inputs.machine }}
+  FC_BUILD: ${{ github.workspace }}/build
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          submodules: recursive
+
+      - name: Report capacity
+        shell: bash
+        run: |
+          set -euxo pipefail
+          echo "cores=$(nproc)  mem=$(free -g | awk '/^Mem:/{print $2}')GB"
+          df -h /
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            gawk wget git diffstat unzip texinfo gcc build-essential chrpath \
+            socat cpio python3 python3-pip python3-pexpect python3-git \
+            python3-jinja2 python3-subunit xz-utils debianutils iputils-ping \
+            zstd liblz4-tool file locales libacl1
+          sudo locale-gen en_US.UTF-8
+
+      - name: Configure build
+        shell: bash
+        run: |
+          set -euxo pipefail
+          # oe-init-build-env references unset vars ($BBSERVER); set -u is fatal there
+          set +u
+          . ./setup-env.sh "$FC_BUILD"
+          set -u
+          cat >> conf/auto.conf <<'EOF'
+          INHERIT += "own-mirrors"
+          SOURCE_MIRROR_URL = "https://downloads.yoctoproject.org/mirror/sources/"
+          BB_NO_NETWORK = "0"
+          EOF
+          echo "MACHINE = \"$MACHINE\"" >> conf/auto.conf
+
+      - name: Build image
+        shell: bash
+        run: |
+          set -euxo pipefail
+          set +u
+          . ./setup-env.sh "$FC_BUILD"
+          set -u
+
+          # Ubuntu 24.04 AppArmor blocks unprivileged user namespaces, which
+          # bitbake needs. Try the sysctl first; if it is still enforced, drop
+          # bitbake's network isolation instead of failing the whole build.
+          U=/proc/sys/kernel/apparmor_restrict_unprivileged_userns
+          if [ -f "$U" ]; then
+            sudo sh -c "echo 0 > $U" || true
+            if [ "$(cat "$U")" = "1" ]; then
+              sed -i 's/bb.utils.disable_network(uid, gid)/pass  # disabled on GitHub runner/' \
+                "$GITHUB_WORKSPACE/layers/bitbake/bin/bitbake-worker"
+            fi
+          fi
+
+          bitbake focalcrest-image-bringup
+
+      - name: Locate image
+        id: collect
+        shell: bash
+        run: |
+          set -euxo pipefail
+          D="$FC_BUILD/tmp/deploy/images/$MACHINE"
+          ls -lah "$D"
+          WIC=$(readlink -f "$(ls -t "$D"/focalcrest-image-bringup-*.rootfs-*.wic | head -1)")
+          ls -lh "$WIC"
+
+          # Build footprint, for sizing future runs
+          du -sh "$FC_BUILD" || true
+          df -h /
+
+          {
+            echo "wic=$WIC"
+            echo "tag=${MACHINE}-$(date -u +%Y%m%d)"
+          } >> "$GITHUB_OUTPUT"
+
+          {
+            echo "### Layer baseline"
+            echo '```'
+            git submodule status
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.MACHINE }}-image
+          path: ${{ steps.collect.outputs.wic }}
+          retention-days: 14
+
+      - name: Publish release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ steps.collect.outputs.tag }}
+          WIC: ${{ steps.collect.outputs.wic }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euxo pipefail
+          NOTES="$GITHUB_WORKSPACE/release-notes.md"
+          cat > "$NOTES" <<EOF
+          - machine: \`${MACHINE}\`
+          - commit: \`${HEAD_SHA}\`
+          - run: ${RUN_URL}
+          EOF
+
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$WIC" --clobber
+            gh release edit "$TAG" --title "$TAG" --notes-file "$NOTES" --latest
+          else
+            gh release create "$TAG" "$WIC" \
+              --title "$TAG" --notes-file "$NOTES" \
+              --target "$HEAD_SHA" --latest
+          fi
