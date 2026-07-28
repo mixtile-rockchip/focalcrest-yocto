@@ -1,0 +1,10 @@
+[Match]
+Name=en* eth*
+
+[Network]
+DHCP=yes
+IgnoreCarrierLoss=3s
+
+[DHCP]
+UseMTU=yes
+RouteMetric=10

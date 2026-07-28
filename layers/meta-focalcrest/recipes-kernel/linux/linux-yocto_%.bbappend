@@ -19,3 +19,20 @@ do_configure:prepend:az07() {
 			>> ${S}/arch/arm64/boot/dts/rockchip/Makefile
 	fi
 }
+
+COMPATIBLE_MACHINE:rk3566-autonomic-m1 = "rk3566-autonomic-m1"
+
+SRC_URI:append:autonomic-m1 = " \
+    file://defconfig \
+    file://rk3566-autonomic-m1.dts \
+"
+
+do_configure:prepend:autonomic-m1() {
+	install -m 0644 ${UNPACKDIR}/rk3566-autonomic-m1.dts \
+		${S}/arch/arm64/boot/dts/rockchip/
+	if ! grep -q "rk3566-autonomic-m1.dtb" \
+			${S}/arch/arm64/boot/dts/rockchip/Makefile; then
+		echo 'dtb-$(CONFIG_ARCH_ROCKCHIP) += rk3566-autonomic-m1.dtb' \
+			>> ${S}/arch/arm64/boot/dts/rockchip/Makefile
+	fi
+}
