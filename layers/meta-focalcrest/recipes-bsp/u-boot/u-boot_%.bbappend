@@ -16,7 +16,7 @@ FC_OPTEE_LOAD_ADDR ?= "0x08400000"
 
 python do_fc_wrap_optee() {
     import struct, os
-    if 'az07' not in d.getVar('MACHINEOVERRIDES').split(':'):
+    if 'focalcrest-rk3566' not in d.getVar('MACHINEOVERRIDES').split(':'):
         return
     src = os.path.join(d.getVar('DEPLOY_DIR_IMAGE'), 'tee-rk3566.bin')
     dst = os.path.join(d.getVar('WORKDIR'), 'tee-optee-v1.bin')
@@ -39,9 +39,9 @@ python do_fc_wrap_optee() {
 addtask fc_wrap_optee after do_configure before do_compile
 do_fc_wrap_optee[depends] += "rockchip-rkbin-optee-os:do_deploy"
 
-EXTRA_OEMAKE:append:az07 = " TEE=${WORKDIR}/tee-optee-v1.bin"
+EXTRA_OEMAKE:append:focalcrest-rk3566 = " TEE=${WORKDIR}/tee-optee-v1.bin"
 
-DEPENDS:append:az07 = " xxd-native"
+DEPENDS:append:focalcrest-rk3566 = " xxd-native"
 
 do_configure:prepend:az07() {
 	install -m 0644 ${UNPACKDIR}/rk3566-focalcrest-az07.dts \
@@ -53,4 +53,23 @@ do_configure:prepend:az07() {
 	install -d ${S}/board/focalcrest/az07
 	install -m 0644 ${UNPACKDIR}/rk3566-focalcrest-az07.env \
 		${S}/board/focalcrest/az07/
+}
+
+SRC_URI:append:autonomic-m1 = " \
+    file://rk3566-autonomic-m1.dts \
+    file://rk3566-autonomic-m1-u-boot.dtsi \
+    file://rk3566-autonomic-m1_defconfig \
+    file://rk3566-autonomic-m1.env \
+"
+
+do_configure:prepend:autonomic-m1() {
+	install -m 0644 ${UNPACKDIR}/rk3566-autonomic-m1.dts \
+		${S}/arch/arm/dts/
+	install -m 0644 ${UNPACKDIR}/rk3566-autonomic-m1-u-boot.dtsi \
+		${S}/arch/arm/dts/
+	install -m 0644 ${UNPACKDIR}/rk3566-autonomic-m1_defconfig \
+		${S}/configs/
+	install -d ${S}/board/autonomic/m1
+	install -m 0644 ${UNPACKDIR}/rk3566-autonomic-m1.env \
+		${S}/board/autonomic/m1/
 }

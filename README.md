@@ -34,3 +34,4 @@ bitbake focalcrest-image-bringup
 | MACHINE | SoC |
 |---|---|
 | `rk3566-focalcrest-az07` | RK3566 |
+| `rk3566-autonomic-m1` | RK3566 |
