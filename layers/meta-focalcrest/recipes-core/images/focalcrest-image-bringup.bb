@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2026 Focalcrest
 
-SUMMARY = "Focalcrest 板级调试镜像"
+SUMMARY = "Focalcrest board bring-up debug image"
 
 LICENSE = "MIT"
 

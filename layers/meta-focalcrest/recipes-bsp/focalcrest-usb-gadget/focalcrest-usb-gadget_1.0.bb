@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2026 Focalcrest
 
-SUMMARY = "CDC-ECM USB gadget 调试链路"
+SUMMARY = "CDC-ECM USB gadget debug link"
 
 LICENSE = "MIT"
 LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda2f7b4f302"

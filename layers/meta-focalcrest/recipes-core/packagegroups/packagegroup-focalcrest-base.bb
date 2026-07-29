@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2026 Focalcrest
 
-SUMMARY = "Focalcrest 调试镜像包组"
+SUMMARY = "Focalcrest debug image package group"
 
 inherit packagegroup
 
