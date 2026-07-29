@@ -36,7 +36,7 @@ start() {
 	[ -d "$GADGET" ] && exit 0
 
 	if ! udc=$(find_udc); then
-		echo "focalcrest-usb-gadget: 没有可用的 UDC, OTG 口可能处于 host 模式" >&2
+		echo "focalcrest-usb-gadget: no UDC available, the OTG port may be in host mode" >&2
 		exit 1
 	fi
 
@@ -81,7 +81,7 @@ case "$1" in
 	start) start ;;
 	stop)  stop  ;;
 	*)
-		echo "用法: $0 {start|stop}" >&2
+		echo "usage: $0 {start|stop}" >&2
 		exit 1
 		;;
 esac

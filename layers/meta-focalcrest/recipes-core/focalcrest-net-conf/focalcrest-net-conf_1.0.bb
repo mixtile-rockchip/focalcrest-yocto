@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2026 Focalcrest
 
-SUMMARY = "systemd-networkd 网络配置 (usb0 / wlan0 / 有线)"
+SUMMARY = "systemd-networkd configuration (usb0 / wlan0 / ethernet)"
 
 LICENSE = "MIT"
 LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda2f7b4f302"

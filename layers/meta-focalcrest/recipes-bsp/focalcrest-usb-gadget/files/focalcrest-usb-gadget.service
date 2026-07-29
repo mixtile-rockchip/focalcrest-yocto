@@ -1,5 +1,5 @@
 [Unit]
-Description=Focalcrest CDC-ECM USB gadget (调试链路)
+Description=Focalcrest CDC-ECM USB gadget (debug link)
 Requires=sys-kernel-config.mount
 After=sys-kernel-config.mount
 Before=network-pre.target

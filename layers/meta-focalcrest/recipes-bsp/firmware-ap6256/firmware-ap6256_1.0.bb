@@ -1,8 +1,8 @@
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2026 Focalcrest
 
-SUMMARY = "AP6256 (BCM43456) WiFi/BT 固件"
-DESCRIPTION = "上游 linux-firmware 只有 43455, 不含 43456。"
+SUMMARY = "AP6256 (BCM43456) WiFi/BT firmware"
+DESCRIPTION = "Upstream linux-firmware ships 43455 only, not 43456."
 
 LICENSE = "Firmware-broadcom_bcm43xx"
 LICENSE_FLAGS = "commercial"
