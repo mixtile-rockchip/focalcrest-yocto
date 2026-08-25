@@ -53,3 +53,20 @@ do_configure:prepend:az08() {
 			>> ${S}/arch/arm64/boot/dts/rockchip/Makefile
 	fi
 }
+
+COMPATIBLE_MACHINE:rk3588s-focalcrest-az04b = "rk3588s-focalcrest-az04b"
+
+SRC_URI:append:az04b = " \
+    file://defconfig \
+    file://rk3588s-focalcrest-az04b.dts \
+"
+
+do_configure:prepend:az04b() {
+	install -m 0644 ${UNPACKDIR}/rk3588s-focalcrest-az04b.dts \
+		${S}/arch/arm64/boot/dts/rockchip/
+	if ! grep -q "rk3588s-focalcrest-az04b.dtb" \
+			${S}/arch/arm64/boot/dts/rockchip/Makefile; then
+		echo 'dtb-$(CONFIG_ARCH_ROCKCHIP) += rk3588s-focalcrest-az04b.dtb' \
+			>> ${S}/arch/arm64/boot/dts/rockchip/Makefile
+	fi
+}
